@@ -140,7 +140,7 @@ const App: React.FC = () => {
       const minutes = Math.floor((timestamp % 3600) / 60);
       return `${days.toString().padStart(2, '0')}.${hours
         .toString()
-        .padStart(2, '0')}.${minutes.toString().padStart(2, '0')}`
+        .padStart(2, '0')}.${minutes.toString().padStart(2, '0')}`;
     }
     return '';
   };
@@ -158,23 +158,26 @@ const App: React.FC = () => {
     (entry) =>
       new Date(entry.startTime).toDateString() === new Date().toDateString()
   );
-
   return (
-    <div className="p-4 bg-gray-100 rounded-lg shadow-lg max-w-[500px] w-[500px] flex flex-col h-[300px] h-max-[500px]">
-      <h1 className="text-2xl font-bold mb-4 text-center">Work Time Tracker</h1>
-      <div className="flex justify-between mb-4">
-        <span>
-          Total this month: {formatDateTime(totalMonthTime, 'report')}
-        </span>
-        {timerRunning && (
+    <div className="p-4 py-2 bg-white max-w-[500px] w-[500px] flex flex-col h-[300px] h-max-[500px]">
+      <div className="flex flex-col justify-center border-b-black border-b">
+        <h1 className="text-xl font-bold text-center">
+          Work Time Tracker
+        </h1>
+        <div className="flex justify-between mb-2">
           <span>
-            Current Session:{' '}
-            <span className="text-red-500 font-bold">
-              {formatDateTime(elapsedTime, 'duration')}
-            </span>
+            Total this month: {formatDateTime(totalMonthTime, 'report')}
           </span>
-        )}
-        <span>Total today: {formatDateTime(totalTodayTime, 'duration')}</span>
+          {timerRunning && (
+            <span>
+              Current Session:{' '}
+              <span className="text-red-500 font-bold">
+                {formatDateTime(elapsedTime, 'duration')}
+              </span>
+            </span>
+          )}
+          <span>Total today: {formatDateTime(totalTodayTime, 'duration')}</span>
+        </div>
       </div>
       <div className="overflow-auto flex-grow">
         <table className="w-full table-auto border-collapse">
@@ -189,50 +192,50 @@ const App: React.FC = () => {
           </thead>
           <tbody>
             {workTimes.map((entry, index) => (
-              <tr key={index} className="bg-white even:bg-gray-50">
+              <tr key={index} className="bg-white even:bg-gray-200">
                 <td className="border px-4 py-2">
                   <input
                     type="text"
-                    className="w-full"
+                    className="w-full bg-inherit"
                     value={formatDateTime(entry.startTime, 'date')}
                     onChange={(e) =>
                       updateEntry(index, 'startDate', e.target.value)
                     }
                   />
                 </td>
-                <td className="border px-4 py-2">
+                <td className="border px-2 py-2">
                   <input
                     type="text"
-                    className="w-full"
+                    className="w-full bg-inherit"
                     value={formatDateTime(entry.startTime, 'time')}
                     onChange={(e) =>
                       updateEntry(index, 'startTime', e.target.value)
                     }
                   />
                 </td>
-                <td className="border px-4 py-2">
+                <td className="border px-2 py-2">
                   <input
                     type="text"
-                    className="w-full"
+                    className="w-full bg-inherit"
                     value={formatDateTime(entry.endTime, 'time')}
                     onChange={(e) =>
                       updateEntry(index, 'endTime', e.target.value)
                     }
                   />
                 </td>
-                <td className="border px-4 py-2">
+                <td className="border px-2 py-2">
                   <input
                     type="text"
-                    className="w-full"
+                    className="w-full bg-inherit"
                     value={formatDateTime(entry.duration, 'duration')}
                     onChange={(e) =>
                       updateEntry(index, 'duration', e.target.value)
                     }
                   />
                 </td>
-                <td className="border px-4 py-2 text-center">
+                <td className="border px-2 py-2 text-center">
                   <button
-                    className="bg-red-500 text-white py-1 px-2 rounded"
+                    className="bg-inherit hover:bg-gray-100 py-1 px-2 rounded-full"
                     onClick={() => deleteEntry(index)}
                   >
                     X
@@ -243,17 +246,17 @@ const App: React.FC = () => {
           </tbody>
         </table>
       </div>
-      <div className="flex mt-4 justify-center">
+      <div className="flex pt-4 justify-center border-t-black border-t">
         {timerRunning ? (
           <button
-            className="bg-red-500 text-white py-2 px-4 rounded"
+            className="bg-red-500 text-white py-2 px-4 rounded-full"
             onClick={stopTimer}
           >
             Stop
           </button>
         ) : (
           <button
-            className="bg-green-500 text-white py-2 px-4 rounded"
+            className="bg-gray-500 text-white py-2 px-4 rounded-full"
             onClick={startTimer}
           >
             Start
