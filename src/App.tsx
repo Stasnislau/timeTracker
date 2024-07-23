@@ -8,7 +8,10 @@ const App: React.FC = () => {
   const [elapsedTime, setElapsedTime] = useState(0);
 
   useEffect(() => {
-    getStoredWorkTimes().then((times) => setWorkTimes(times));
+    getStoredWorkTimes().then((times) => {
+      const sortedTimes = times.sort((a, b) => b.startTime - a.startTime);
+      setWorkTimes(sortedTimes);
+    });
     chrome.storage.local.get(['timerRunning', 'startTime'], (result) => {
       if (result.timerRunning) {
         setTimerRunning(true);
@@ -65,6 +68,7 @@ const App: React.FC = () => {
     };
 
     const updatedWorkTimes = [...workTimes, newEntry];
+    updatedWorkTimes.sort((a, b) => b.startTime - a.startTime);
     setWorkTimes(updatedWorkTimes);
     storeWorkTimes(updatedWorkTimes);
     setTimerRunning(false);
@@ -135,12 +139,11 @@ const App: React.FC = () => {
         .toString()
         .padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
     } else if (format === 'report') {
-      const days = Math.floor(timestamp / 86400);
-      const hours = Math.floor((timestamp % 86400) / 3600);
+      const hours = Math.floor(timestamp / 3600);
       const minutes = Math.floor((timestamp % 3600) / 60);
-      return `${days.toString().padStart(2, '0')}.${hours
+      return `${hours.toString().padStart(3, '0')}.${minutes
         .toString()
-        .padStart(2, '0')}.${minutes.toString().padStart(2, '0')}`;
+        .padStart(2, '0')}`;
     }
     return '';
   };
@@ -161,9 +164,7 @@ const App: React.FC = () => {
   return (
     <div className="p-4 py-2 bg-white max-w-[500px] w-[500px] flex flex-col h-[300px] h-max-[500px]">
       <div className="flex flex-col justify-center border-b-black border-b">
-        <h1 className="text-xl font-bold text-center">
-          Work Time Tracker
-        </h1>
+        <h1 className="text-xl font-bold text-center">Work Time Tracker</h1>
         <div className="flex justify-between mb-2">
           <span>
             Total this month: {formatDateTime(totalMonthTime, 'report')}
