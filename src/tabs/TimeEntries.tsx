@@ -40,6 +40,19 @@ const TimerEntries: React.FC = () => {
     const elapsed = Math.round((now - startTime) / 1000);
     setElapsedTime(elapsed);
   };
+  const [editingValues, setEditingValues] = useState<{ [key: string]: string }>(
+    {}
+  );
+
+  const handleInputChange = (index: number, field: string, value: string) => {
+    setEditingValues((prev) => ({ ...prev, [`${index}-${field}`]: value }));
+
+    if ((field === 'startTime' || field === 'endTime') && value.length === 5) {
+      updateEntry(index, field, value);
+    } else if (field === 'date' && value.length === 10) {
+      updateEntry(index, field, value);
+    }
+  };
 
   const startTimer = () => {
     const startTime = Date.now();
@@ -94,43 +107,38 @@ const TimerEntries: React.FC = () => {
     const updatedWorkTimes = workTimes.map((entry, i) => {
       if (i === index) {
         const newEntry = { ...entry };
-        if (field === 'startDate' || field === 'endDate') {
-          const [day, month, year] = value.split('.').map(Number);
-          const date = new Date(year, month - 1, day);
-          if (field === 'startDate') {
-            newEntry.startTime = new Date(date).getTime();
-            if (newEntry.endTime) {
-              newEntry.duration = Math.round(
-                (newEntry.endTime - newEntry.startTime) / 1000
-              );
+        switch (field) {
+          case 'startTime':
+            const date = new Date(newEntry.startTime);
+            const [hours, minutes] = value.split(':').map(Number);
+            date.setHours(hours);
+            date.setMinutes(minutes);
+            if (date.getTime() > newEntry.endTime) {
+              return newEntry;
             }
-          } else {
-            newEntry.endTime = new Date(date).getTime();
-            newEntry.duration = Math.round(
-              (newEntry.endTime - newEntry.startTime) / 1000
-            );
-          }
-        } else if (field === 'startTime' || field === 'endTime') {
-          const [hours, minutes] = value.split(':').map(Number);
-          const date = new Date(
-            entry[field === 'startTime' ? 'startTime' : 'endTime']
-          );
-          date.setHours(hours);
-          date.setMinutes(minutes);
-          if (field === 'startTime') {
             newEntry.startTime = date.getTime();
-            if (newEntry.endTime) {
-              newEntry.duration = Math.round(
-                (newEntry.endTime - newEntry.startTime) / 1000
-              );
+            break;
+          case 'endTime':
+            const endDate = new Date(newEntry.endTime);
+            const [endHours, endMinutes] = value.split(':').map(Number);
+            endDate.setHours(endHours);
+            endDate.setMinutes(endMinutes);
+            if (endDate.getTime() < newEntry.startTime) {
+              return newEntry;
             }
-          } else {
-            newEntry.endTime = date.getTime();
-            newEntry.duration = Math.round(
-              (newEntry.endTime - newEntry.startTime) / 1000
-            );
-          }
+            newEntry.endTime = endDate.getTime();
+            break;
+          default:
+            const [day, month, year] = value.split('.').map(Number);
+            const startDate = new Date(newEntry.startTime);
+            startDate.setFullYear(year, month - 1, day);
+            newEntry.startTime = startDate.getTime();
+            break;
         }
+
+        newEntry.duration = Math.round(
+          (newEntry.endTime - newEntry.startTime) / 1000
+        );
         return newEntry;
       }
       return entry;
@@ -221,8 +229,8 @@ const TimerEntries: React.FC = () => {
                     className="w-full bg-inherit"
                     value={formatDateTime(entry.startTime, 'date')}
                     onChange={(e) => {
-                      
-                      updateEntry(index, 'startDate', e.target.value);
+                      if (e.target.value.length === 10)
+                        updateEntry(index, 'date', e.target.value);
                     }}
                   />
                 </td>
@@ -231,9 +239,10 @@ const TimerEntries: React.FC = () => {
                     type="text"
                     className="w-full bg-inherit"
                     value={formatDateTime(entry.startTime, 'time')}
-                    onChange={(e) =>
-                      updateEntry(index, 'startTime', e.target.value)
-                    }
+                    onChange={(e) => {
+                      if (e.target.value.length === 5)
+                        updateEntry(index, 'startTime', e.target.value);
+                    }}
                   />
                 </td>
                 <td className="border px-2 py-2">
@@ -241,9 +250,10 @@ const TimerEntries: React.FC = () => {
                     type="text"
                     className="w-full bg-inherit"
                     value={formatDateTime(entry.endTime, 'time')}
-                    onChange={(e) =>
-                      updateEntry(index, 'endTime', e.target.value)
-                    }
+                    onChange={(e) => {
+                      if (e.target.value.length === 5)
+                        updateEntry(index, 'endTime', e.target.value);
+                    }}
                   />
                 </td>
                 <td className="border px-2 py-2">
@@ -252,6 +262,7 @@ const TimerEntries: React.FC = () => {
                     className="w-full bg-inherit"
                     value={formatDateTime(entry.duration, 'duration')}
                     readOnly
+                    disabled
                   />
                 </td>
                 <td className="border px-2 py-2 text-center">
