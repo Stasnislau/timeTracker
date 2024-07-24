@@ -113,7 +113,7 @@ const TimerEntries: React.FC = () => {
             const [hours, minutes] = value.split(':').map(Number);
             date.setHours(hours);
             date.setMinutes(minutes);
-            if (date.getTime() > newEntry.endTime) {
+            if (date.getTime() > newEntry.endTime || date.getTime() > Date.now()) {
               return newEntry;
             }
             newEntry.startTime = date.getTime();
@@ -123,16 +123,30 @@ const TimerEntries: React.FC = () => {
             const [endHours, endMinutes] = value.split(':').map(Number);
             endDate.setHours(endHours);
             endDate.setMinutes(endMinutes);
-            if (endDate.getTime() < newEntry.startTime) {
+            if (endDate.getTime() < newEntry.startTime || endDate.getTime() > Date.now()) {
               return newEntry;
             }
             newEntry.endTime = endDate.getTime();
             break;
           default:
             const [day, month, year] = value.split('.').map(Number);
-            const startDate = new Date(newEntry.startTime);
-            startDate.setFullYear(year, month - 1, day);
-            newEntry.startTime = startDate.getTime();
+            if (isNaN(day) || isNaN(month) || isNaN(year)) {
+              return newEntry;
+            }
+            const newStartDate = new Date(newEntry.startTime);
+            const newEndDate = new Date(newEntry.endTime);
+            newStartDate.setFullYear(year, month - 1, day);
+            newEndDate.setFullYear(year, month - 1, day);
+            
+            if (
+              newStartDate.getTime() > newEndDate.getTime() ||
+              newStartDate.getTime() > new Date().getTime() ||
+              newEndDate.getTime() > new Date().getTime()
+            ) {
+              return newEntry;
+            }
+            newEntry.startTime = newStartDate.getTime();
+            newEntry.endTime = newEndDate.getTime();
             break;
         }
 
