@@ -88,7 +88,7 @@ const Statistics: React.FC = () => {
     } else if (format === 'report') {
       const hours = Math.floor(timestamp / 3600);
       const minutes = Math.floor((timestamp % 3600) / 60);
-      return `${hours.toString().padStart(3, '0')}.${minutes
+      return `${hours.toString()}:${minutes
         .toString()
         .padStart(2, '0')}`;
     }
@@ -175,7 +175,7 @@ const Statistics: React.FC = () => {
       datasets: [
         {
           label: 'Hours',
-          data: data.map((d) => d / 3600), // Convert seconds to hours
+          data: data.map((d) => d / 3600),
           backgroundColor: 'rgba(75, 192, 192, 0.5)',
           borderColor: 'rgba(75, 192, 192, 1)',
           borderWidth: 1,
@@ -274,19 +274,19 @@ const Statistics: React.FC = () => {
       </div>
 
       <div className="mb-2 p-4 transition-transform transform">
-        <h2 className="text-2xl font-semibold text-gray-800 mb-4 font-roboto">
+        <h2 className="text-2xl text-center font-semibold text-gray-800 mb-4 font-roboto">
           Summary
         </h2>
         <div className="flex flex-row justify-between">
           <p className="text-gray-700 text-lg mb-2 font-roboto">
             Total Time:{' '}
-            <span className="font-bold text-teal-600 text-2xl animate-pulse">
-              {formatDateTime(totalTime, 'report')} hours
+            <span className="font-bold text-teal-600 text-xl animate-pulse">
+              {formatDateTime(totalTime, 'report')}
             </span>
           </p>
           <p className="text-gray-700 text-lg font-roboto">
             Total Earnings:{' '}
-            <span className="font-bold text-teal-600 text-2xl animate-pulse">
+            <span className="font-bold text-teal-600 text-xl animate-pulse">
               ${calculateEarnings(totalTime).toFixed(2)}
             </span>
           </p>

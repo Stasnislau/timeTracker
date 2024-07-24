@@ -184,7 +184,7 @@ const TimerEntries: React.FC = () => {
     } else if (format === 'report') {
       const hours = Math.floor(timestamp / 3600);
       const minutes = Math.floor((timestamp % 3600) / 60);
-      return `${hours.toString().padStart(3, '0')}.${minutes
+      return `${hours.toString()}.${minutes
         .toString()
         .padStart(2, '0')}`;
     }
