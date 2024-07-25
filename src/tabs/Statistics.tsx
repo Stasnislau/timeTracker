@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { getStoredWorkTimes, WorkTimeEntry } from '../storage';
+import { getStoredWorkTimes, WorkTimeEntry } from '../db/db';
 import { Bar } from 'react-chartjs-2';
 import {
   Chart as ChartJS,
@@ -23,7 +23,8 @@ ChartJS.register(
 const Statistics: React.FC = () => {
   const [workTimes, setWorkTimes] = useState<WorkTimeEntry[]>([]);
   const [hourlyRate, setHourlyRate] = useState<number>(0);
-  const [selectedPeriod, setSelectedPeriod] = useState<string>('weekly');
+  const [selectedPeriod, setSelectedPeriod] = useState<string>('monthly');
+  const [years, setYears] = useState<number[]>([]);
   const [selectedMonth, setSelectedMonth] = useState<string>(
     new Date().toLocaleString('default', { month: 'long' })
   );
@@ -42,6 +43,14 @@ const Statistics: React.FC = () => {
       }
     });
   }, []);
+
+  useEffect(() => {
+    const years = workTimes.map((entry) =>
+      new Date(entry.startTime).getFullYear()
+    );
+    const uniqueYears = Array.from(new Set(years));
+    setYears(uniqueYears);
+  }, [workTimes]);
 
   useEffect(() => {
     const calculateTotalTime = (filter: (entry: WorkTimeEntry) => boolean) => {
@@ -77,7 +86,6 @@ const Statistics: React.FC = () => {
   }, [workTimes, selectedPeriod, selectedMonth, selectedYear]);
 
   const formatDateTime = (timestamp: number, format: string) => {
-    const date = new Date(timestamp * 1000);
     if (format === 'duration') {
       const hours = Math.floor(timestamp / 3600);
       const minutes = Math.floor((timestamp % 3600) / 60);
@@ -88,9 +96,7 @@ const Statistics: React.FC = () => {
     } else if (format === 'report') {
       const hours = Math.floor(timestamp / 3600);
       const minutes = Math.floor((timestamp % 3600) / 60);
-      return `${hours.toString()}:${minutes
-        .toString()
-        .padStart(2, '0')}`;
+      return `${hours.toString()}:${minutes.toString().padStart(2, '0')}`;
     }
     return '';
   };
@@ -102,7 +108,7 @@ const Statistics: React.FC = () => {
   };
 
   const calculateEarnings = (totalTime: number) => {
-    return (totalTime / 3600) * hourlyRate;
+    return Math.round(totalTime / 3600) * hourlyRate;
   };
 
   const handlePeriodChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
@@ -260,20 +266,23 @@ const Statistics: React.FC = () => {
               onChange={handleYearChange}
               className="w-full p-3 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-teal-500"
             >
-              {Array.from(
-                { length: 10 },
-                (_, i) => new Date().getFullYear() - i
-              ).map((year) => (
-                <option key={year} value={year}>
-                  {year}
+              {years && years.length > 0 ? (
+                years.map((year) => (
+                  <option key={year} value={year}>
+                    {year}
+                  </option>
+                ))
+              ) : (
+                <option value={new Date().getFullYear()}>
+                  {new Date().getFullYear()}
                 </option>
-              ))}
+              )}
             </select>
           </div>
         )}
       </div>
 
-      <div className="mb-2 p-4 transition-transform transform">
+      <div className="mb-6 p-4 transition-transform transform">
         <h2 className="text-2xl text-center font-semibold text-gray-800 mb-4 font-roboto">
           Summary
         </h2>

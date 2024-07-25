@@ -10,7 +10,7 @@ const App: React.FC = () => {
       <div className="mb-4 flex justify-around w-full border-b border-gray-200 relative">
         <button
           className={`w-1/2 py-2 text-center ${
-            activeTab === 'timer' ? 'text-teal-500 font-bold' : 'text-gray-500'
+            activeTab === 'timer' ? 'text-teal-500 font-bold shadow-lg' : 'text-gray-500'
           }`}
           onClick={() => setActiveTab('timer')}
         >
@@ -19,7 +19,7 @@ const App: React.FC = () => {
         <button
           className={`w-1/2 py-2 text-center ${
             activeTab === 'statistics'
-              ? 'text-teal-500 font-bold'
+              ? 'text-teal-500 font-bold shadow-lg'
               : 'text-gray-500'
           }`}
           onClick={() => setActiveTab('statistics')}
@@ -27,7 +27,7 @@ const App: React.FC = () => {
           Statistics
         </button>
         <div
-          className={`absolute bottom-0 left-0 w-1/2 h-px bg-teal-500 transition-transform duration-300 ${
+          className={`absolute bottom-0 left-0 w-1/2 h-px bg-teal-500 transition-transform duration-100 ${
             activeTab === 'statistics' && 'translate-x-full'
           }`}
         />

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { getStoredWorkTimes, storeWorkTimes, WorkTimeEntry } from '../storage';
+import { getStoredWorkTimes, storeWorkTimes, WorkTimeEntry } from '../db/db';
 
 const TimerEntries: React.FC = () => {
   const [workTimes, setWorkTimes] = useState<WorkTimeEntry[]>([]);
