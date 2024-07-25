@@ -111,6 +111,9 @@ const TimerEntries: React.FC = () => {
           case 'startTime':
             const date = new Date(newEntry.startTime);
             const [hours, minutes] = value.split(':').map(Number);
+            if (isNaN(hours) || isNaN(minutes) || hours > 23 || minutes > 59) {
+              return newEntry;
+            }
             date.setHours(hours);
             date.setMinutes(minutes);
             if (date.getTime() > newEntry.endTime || date.getTime() > Date.now()) {
@@ -130,7 +133,7 @@ const TimerEntries: React.FC = () => {
             break;
           default:
             const [day, month, year] = value.split('.').map(Number);
-            if (isNaN(day) || isNaN(month) || isNaN(year)) {
+            if (isNaN(day) || isNaN(month) || isNaN(year) || day > 31 || month > 12) {
               return newEntry;
             }
             const newStartDate = new Date(newEntry.startTime);
