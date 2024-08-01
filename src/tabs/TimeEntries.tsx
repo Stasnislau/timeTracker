@@ -40,19 +40,6 @@ const TimerEntries: React.FC = () => {
     const elapsed = Math.round((now - startTime) / 1000);
     setElapsedTime(elapsed);
   };
-  const [editingValues, setEditingValues] = useState<{ [key: string]: string }>(
-    {}
-  );
-
-  const handleInputChange = (index: number, field: string, value: string) => {
-    setEditingValues((prev) => ({ ...prev, [`${index}-${field}`]: value }));
-
-    if ((field === 'startTime' || field === 'endTime') && value.length === 5) {
-      updateEntry(index, field, value);
-    } else if (field === 'date' && value.length === 10) {
-      updateEntry(index, field, value);
-    }
-  };
 
   const startTimer = () => {
     const startTime = Date.now();

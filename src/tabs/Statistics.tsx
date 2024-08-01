@@ -296,7 +296,10 @@ const Statistics: React.FC = () => {
           <p className="text-gray-700 text-lg font-roboto">
             Total Earnings:{' '}
             <span className="font-bold text-teal-600 text-xl animate-pulse">
-              ${calculateEarnings(totalTime).toFixed(2)}
+              { hourlyRate < 60 &&  '$' }
+              {calculateEarnings(totalTime).toFixed(2)}
+              { hourlyRate >= 60 &&  ' Zł' }
+
             </span>
           </p>
         </div>
