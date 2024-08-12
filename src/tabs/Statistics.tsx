@@ -147,15 +147,13 @@ const Statistics: React.FC = () => {
     } else if (selectedPeriod === 'monthly') {
       const daysInMonth = new Date(
         now.getFullYear(),
-        now.getMonth() + 1,
+        new Date(selectedMonth + ' 1, ' + selectedYear).getMonth() + 1,
         0
       ).getDate();
       labels = Array.from({ length: daysInMonth }, (_, i) => `Day ${i + 1}`);
       data = labels.map((_, i) => {
         const day = new Date(
-          now.getFullYear(),
-          now.getMonth(),
-          i + 1
+          new Date(selectedMonth + ' 1, ' + selectedYear).setDate(i + 1)
         ).toDateString();
         return workTimes
           .filter((entry) => new Date(entry.startTime).toDateString() === day)
@@ -180,6 +178,14 @@ const Statistics: React.FC = () => {
       labels,
       datasets: [
         {
+          label: 'Earnings',
+          data: data.map((d) => calculateEarnings(d)),
+          backgroundColor: 'rgba(255, 99, 132, 0.5)',
+          borderColor: 'rgba(255, 99, 132, 1)',
+          borderWidth: 1,
+          hidden: true,
+        },
+        {
           label: 'Hours',
           data: data.map((d) => d / 3600),
           backgroundColor: 'rgba(75, 192, 192, 0.5)',
@@ -190,7 +196,11 @@ const Statistics: React.FC = () => {
     };
   };
 
-  const chartData = calculateChartData();
+  const [chartData, setChartData] = useState(calculateChartData());
+
+  useEffect(() => {
+    setChartData(calculateChartData());
+  }, [workTimes, selectedPeriod, selectedMonth, selectedYear]);
 
   const months = [
     'January',
@@ -296,17 +306,21 @@ const Statistics: React.FC = () => {
           <p className="text-gray-700 text-lg font-roboto">
             Total Earnings:{' '}
             <span className="font-bold text-teal-600 text-xl animate-pulse">
-              { hourlyRate < 60 &&  '$' }
+              {hourlyRate < 60 && '$'}
               {calculateEarnings(totalTime).toFixed(2)}
-              { hourlyRate >= 60 &&  ' Zł' }
-
+              {hourlyRate >= 60 && ' Zł'}
             </span>
           </p>
         </div>
       </div>
 
       <div className="mb-6">
-        <Bar data={chartData} options={{ maintainAspectRatio: false }} />
+        <Bar
+          data={chartData}
+          options={{
+            maintainAspectRatio: false,
+          }}
+        />
       </div>
     </div>
   );
