@@ -6,6 +6,8 @@ yarn-debug.log*
 yarn-error.log*
 pnpm-debug.log*
 lerna-debug.log*
+package-lock.json
+migrations*
 
 node_modules
 dist
@@ -24,3 +26,5 @@ dist-ssr
 *.sw?
 src/db/data.json
 src/db/seedData.ts
+.env
+scripts*

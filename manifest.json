@@ -1,13 +1,14 @@
 {
   "manifest_version": 3,
   "name": "Time Tracker",
-  "version": "3.1.1",
+  "version": "4.0.0",
   "description": "Track your time super easily!",
   "permissions": [
     "activeTab",
     "storage",
     "tabs",
-    "scripting"
+    "scripting",
+    "webRequest"
   ],
   "action": {
     "default_popup": "index.html",
