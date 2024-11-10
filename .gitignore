@@ -28,3 +28,9 @@ src/db/data.json
 src/db/seedData.ts
 .env
 scripts*
+start-server.bat
+setup-autostart.ps1
+
+server/timetracker-service.xml
+server/install-service.js
+server/install-service.bat

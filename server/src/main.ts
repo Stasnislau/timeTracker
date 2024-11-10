@@ -9,11 +9,12 @@ async function bootstrap() {
   app.useGlobalPipes(new ValidationPipe());
   app.setGlobalPrefix("api");
   app.enableCors({
-    origin: "*",
+    origin: process.env.CORS_ORIGIN,
     methods: "*",
     allowedHeaders: "*",
   });
   const port = process.env.PORT;
   await app.listen(port);
+
 }
 bootstrap();
