@@ -14,7 +14,6 @@ const App: React.FC = () => {
     "timer" | "projects" | "statistics"
   >("timer");
 
-  // Loading fallback component
   const LoadingFallback = () => (
     <div className="flex justify-center items-center h-full p-8">
       <div className="w-8 h-8 border-3 border-teal-500 border-t-transparent rounded-full animate-spin" />
@@ -69,7 +68,6 @@ const App: React.FC = () => {
               }}
             />
           </div>
-          {/* Wrap tab content in Suspense */}
           <Suspense fallback={<LoadingFallback />}>
             {activeTab === "timer" && <TimerEntries />}
             {activeTab === "statistics" && <Statistics />}

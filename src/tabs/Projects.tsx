@@ -4,7 +4,6 @@ import { useProjectStore } from "../store/projectStore";
 import { useDeleteProject } from "../api/hooks/useDeleteProject";
 import { useCreateProject } from "../api/hooks/useCreateProject";
 import { motion, AnimatePresence } from "framer-motion";
-import ErrorToast from "../components/ErrorToast";
 import { Project } from "../types/project";
 import { useGenerateReport } from "../api/hooks/useGenerateReport";
 import { GenerateReportInput } from "../types/generateReportInpu";

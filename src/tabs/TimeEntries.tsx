@@ -270,23 +270,23 @@ const TimerEntries: React.FC = () => {
           <span>Total today: {formatDateTime(totalTodayTime, "duration")}</span>
         </div>
       </div>
-      <div className="overflow-y-auto flex-grow w-full">
-        <table className="w-full table-auto border-collapse max-w-full">
+      <div className="overflow-y-auto flex-grow w-full max-w-full overflow-x-auto">
+        <table className="w-full table-auto border-collapse">
           <thead>
             <tr className="bg-gray-200">
-              <th className="border px-4 py-2">Date</th>
-              <th className="border px-4 py-2">Start</th>
-              <th className="border px-4 py-2">End</th>
-              <th className="border px-4 py-2">Duration</th>
-              <th className="border px-4 py-2">Project</th>
-              <th className="border px-4 py-2">Description</th>
-              <th className="border px-4 py-2">Actions</th>
+              <th className="border px-2 py-2">Date</th>
+              <th className="border px-2 py-2">Start</th>
+              <th className="border px-2 py-2">End</th>
+              <th className="border px-2 py-2">Duration</th>
+              <th className="border px-2 py-2">Project</th>
+              <th className="border px-2 py-2">Description</th>
+              <th className="border px-2 py-2">Actions</th>
             </tr>
           </thead>
           <tbody>
             {workTimes.map((entry, index) => (
-              <tr key={index} className="bg-white even:bg-gray-200">
-                <td className="border px-4 py-2 text-center text-ellipsis whitespace-nowrap overflow-hidden">
+              <tr key={index} className={`bg-white even:bg-gray-200 `}>
+                <td className="border px-2 py-2 text-center text-ellipsis whitespace-nowrap overflow-hidden">
                   {editingEntry?.id === entry.id ? (
                     <input
                       type="text"
@@ -301,7 +301,17 @@ const TimerEntries: React.FC = () => {
                       className="w-full text-xs border-none rounded focus:outline-none focus:ring-1 focus:ring-teal-500"
                     />
                   ) : (
-                    formatDateTime(new Date(entry.startTime).getTime(), "date")
+                    <span
+                      title={formatDateTime(
+                        new Date(entry.startTime).getTime(),
+                        "date"
+                      )}
+                    >
+                      {formatDateTime(
+                        new Date(entry.startTime).getTime(),
+                        "date"
+                      )}
+                    </span>
                   )}
                 </td>
                 <td className="border px-2 py-2 text-center text-ellipsis whitespace-nowrap">
@@ -319,7 +329,17 @@ const TimerEntries: React.FC = () => {
                       className="w-full text-xs border-none rounded focus:outline-none focus:ring-1 focus:ring-teal-500"
                     />
                   ) : (
-                    formatDateTime(new Date(entry.startTime).getTime(), "time")
+                    <span
+                      title={formatDateTime(
+                        new Date(entry.startTime).getTime(),
+                        "time"
+                      )}
+                    >
+                      {formatDateTime(
+                        new Date(entry.startTime).getTime(),
+                        "time"
+                      )}
+                    </span>
                   )}
                 </td>
                 <td className="border px-2 py-2 text-center text-ellipsis whitespace-nowrap">
@@ -337,17 +357,36 @@ const TimerEntries: React.FC = () => {
                       className="w-full text-xs border-none rounded focus:outline-none focus:ring-1 focus:ring-teal-500"
                     />
                   ) : (
-                    formatDateTime(new Date(entry.endTime).getTime(), "time")
+                    <span
+                      title={formatDateTime(
+                        new Date(entry.endTime).getTime(),
+                        "time"
+                      )}
+                    >
+                      {formatDateTime(
+                        new Date(entry.endTime).getTime(),
+                        "time"
+                      )}
+                    </span>
                   )}
                 </td>
                 <td className="border px-2 py-2 text-center">
-                  {formatDateTime(entry.duration, "duration")}
+                  <span title={formatDateTime(entry.duration, "duration")}>
+                    {formatDateTime(entry.duration, "duration")}
+                  </span>
                 </td>
-                <td className="border px-4 py-2 text-sm text-center text-ellipsis whitespace-nowrap overflow-hidden">
-                  {projects?.find((p) => p.id === entry.projectId)?.name ||
-                    "Unknown Project"}
+                <td className="border px-2 py-2 text-xs text-center text-ellipsis whitespace-nowrap overflow-hidden">
+                  <span
+                    title={
+                      projects?.find((p) => p.id === entry.projectId)?.name ||
+                      "Unknown Project"
+                    }
+                  >
+                    {projects?.find((p) => p.id === entry.projectId)?.name ||
+                      "Unknown Project"}
+                  </span>
                 </td>
-                <td className="border px-4 py-2 text-ellipsis whitespace-nowrap overflow-hidden">
+                <td className="border px-2 py-2 text-ellipsis whitespace-nowrap overflow-hidden max-w-[100px]">
                   {editingEntry?.id === entry.id ? (
                     <input
                       type="text"
@@ -358,10 +397,13 @@ const TimerEntries: React.FC = () => {
                           description: e.target.value,
                         });
                       }}
-                      className="w-full text-xs border-none rounded focus:outline-none focus:ring-1 focus:ring-teal-500"
+                      className="w-full text-sm border-none rounded focus:outline-none focus:ring-1 focus:ring-teal-500"
                     />
                   ) : (
-                    <span className="text-sm text-gray-600">
+                    <span 
+                      className="text-sm text-gray-600 block truncate"
+                      title={entry.description || "No description"}
+                    >
                       {entry.description || "No description"}
                     </span>
                   )}
@@ -483,13 +525,16 @@ const TimerEntries: React.FC = () => {
             />
             <div className="flex justify-end gap-2">
               <button
-                className="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded"
-                onClick={() => finalizeTimer()}
+                className="flex items-center px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
+                onClick={() => {
+                  setDescription("");
+                  finalizeTimer();
+                }}
               >
                 Skip
               </button>
               <button
-                className="px-4 py-2 bg-teal-500 text-white rounded hover:bg-teal-600"
+                className="flex items-center px-4 py-2 bg-teal-500 text-white rounded-lg hover:bg-teal-600 transition-colors"
                 onClick={() => finalizeTimer()}
               >
                 Save
