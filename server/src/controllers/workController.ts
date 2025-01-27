@@ -4,20 +4,22 @@ import {
   Post,
   Body,
   Delete,
-  Param,
   Put,
   Query,
 } from "@nestjs/common";
 import { WorkService } from "../services/workService";
 import { WorkEntryDTO } from "../../dto/workEntryDto";
 import { WorkEntry } from "@prisma/client";
+import { LoadMoreDto } from '../types/requests/loadMoreRequest';
+import { StatisticsRequest } from "src/types/requests/statisticsRequest";
+
 @Controller("work")
 export class WorkController {
   constructor(private workService: WorkService) {}
 
-  @Get("all")
-  async getAllWorkEntries() {
-    return this.workService.getAllWorkEntries();
+  @Post("all")
+  async getAllWorkEntries(@Body() loadMoreDto: LoadMoreDto) {
+    return this.workService.getAllWorkEntries(loadMoreDto);
   }
 
   @Post("create")
@@ -33,5 +35,15 @@ export class WorkController {
   @Put("update")
   async updateWorkEntry(@Body() workEntry: WorkEntry) {
     return this.workService.updateWorkEntry(workEntry);
+  }
+
+  @Post("statistics")
+  async getStatistics(@Body() statisticsRequest: StatisticsRequest) {
+    return this.workService.getStatistics(statisticsRequest);
+  }
+
+  @Get("years")
+  async getAvailableYears() {
+    return this.workService.getAvailableYears();
   }
 }

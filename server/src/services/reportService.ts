@@ -41,6 +41,7 @@ export class ReportService {
       { header: 'Start Time', key: 'startTime', width: 12 },
       { header: 'End Time', key: 'endTime', width: 12 },
       { header: 'Duration (hours)', key: 'duration', width: 15 },
+      { header: 'Description', key: 'description', width: 30 },
     ];
 
     worksheet.getRow(1).font = { bold: true };
@@ -69,6 +70,7 @@ export class ReportService {
           hour12: false 
         }),
         duration: duration.toFixed(2),
+        description: entry.description,
       });
     });
 
@@ -81,6 +83,7 @@ export class ReportService {
         const duration = (new Date(entry.endTime).getTime() - new Date(entry.startTime).getTime()) / (1000 * 60 * 60);
         return acc + duration;
       }, 0).toFixed(2),
+      description: '',
     });
     totalRow.font = { bold: true };
 

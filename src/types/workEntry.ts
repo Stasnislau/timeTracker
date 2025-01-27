@@ -3,4 +3,5 @@ export interface WorkEntry {
   startTime: string;
   endTime: string;
   projectId: string;
+  description: string;
 }

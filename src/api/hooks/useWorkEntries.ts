@@ -1,14 +1,31 @@
-import { useQuery } from "@tanstack/react-query";
+import { useInfiniteQuery } from "@tanstack/react-query";
 import { getWorkEntries } from "../queries/getWorkEntries";
 
 export const useWorkEntries = () => {
-  const { data, isLoading, error } = useQuery({
+  const {
+    data,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+    isLoading,
+    error
+  } = useInfiniteQuery({
     queryKey: ["workEntries"],
-    queryFn: () => getWorkEntries(),
+    queryFn: ({ pageParam }) => getWorkEntries({ monthCursor: pageParam }),
+    getNextPageParam: (lastPage) => {
+      if (!lastPage.items.length) return undefined;
+      return lastPage.nextCursor;
+    },
+    initialPageParam: new Date().toISOString()
   });
 
+  const workEntries = data?.pages.flatMap(page => page.items) ?? [];
+
   return {
-    workEntries: data,
+    workEntries,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
     isLoading,
     error,
   };

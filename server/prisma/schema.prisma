@@ -13,6 +13,7 @@ model WorkEntry {
     endTime   DateTime @map("end_time")
     projectId String   @map("project_id")
     project   Project  @relation(fields: [projectId], references: [id])
+    description String @map("description") @default("")
 
     @@map("work_entry")
 }

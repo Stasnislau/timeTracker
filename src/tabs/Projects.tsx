@@ -8,6 +8,7 @@ import ErrorToast from "../components/ErrorToast";
 import { Project } from "../types/project";
 import { useGenerateReport } from "../api/hooks/useGenerateReport";
 import { GenerateReportInput } from "../types/generateReportInpu";
+import { useToastsStore } from "../store/useToastsStore";
 
 interface DeleteModalProps {
   isOpen: boolean;
@@ -359,6 +360,7 @@ const Projects: React.FC = () => {
   const { projects, isLoading } = useProjects();
   const { currentProject, setCurrentProject } = useProjectStore();
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  const { addToast } = useToastsStore();
   const [deleteModalData, setDeleteModalData] = useState<{
     isOpen: boolean;
     projectId: string;
@@ -368,7 +370,6 @@ const Projects: React.FC = () => {
     projectId: "",
     projectName: "",
   });
-  const [error, setError] = useState<string | null>(null);
   const [isReportModalOpen, setIsReportModalOpen] = useState(false);
   const { generateReport } = useGenerateReport();
   const { createProject } = useCreateProject();
@@ -385,9 +386,11 @@ const Projects: React.FC = () => {
         }
       );
     } catch (error) {
-      setError(
-        error instanceof Error ? error.message : "Failed to create project"
-      );
+      addToast({
+        message:
+          error instanceof Error ? error.message : "Failed to create project",
+        onClose: () => {},
+      });
     }
   };
 
@@ -423,9 +426,11 @@ const Projects: React.FC = () => {
         },
       });
     } catch (error) {
-      setError(
-        error instanceof Error ? error.message : "Failed to generate report"
-      );
+      addToast({
+        message:
+          error instanceof Error ? error.message : "Failed to generate report",
+        onClose: () => {},
+      });
     }
   };
 
@@ -570,10 +575,6 @@ const Projects: React.FC = () => {
         onGenerate={handleGenerateReport}
         projects={sortedProjects}
       />
-
-      <AnimatePresence>
-        {error && <ErrorToast message={error} onClose={() => setError(null)} />}
-      </AnimatePresence>
     </div>
   );
 };

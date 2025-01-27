@@ -9,12 +9,13 @@ async function bootstrap() {
   app.useGlobalPipes(new ValidationPipe());
   app.setGlobalPrefix("api");
   app.enableCors({
-    origin: process.env.CORS_ORIGIN,
+    origin: "*",
     methods: "*",
     allowedHeaders: "*",
   });
   const port = process.env.PORT;
   await app.listen(port);
+  console.log(`Server is running on port ${port}`);
 
 }
 bootstrap();

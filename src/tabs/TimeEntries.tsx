@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useMemo, useRef } from "react";
 import { useWorkEntries } from "../api/hooks/useWorkEntries";
 import { WorkEntry } from "../types/workEntry";
 import { useCreateWorkEntry } from "../api/hooks/useCreateWorkEntry";
@@ -19,9 +19,9 @@ interface EditableEntry {
   date: string;
   startTime: string;
   endTime: string;
+  description: string;
 }
 
-// Добавить новые функции для валидации формата
 const isValidTimeFormat = (time: string): boolean => {
   return /^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/.test(time);
 };
@@ -31,7 +31,8 @@ const isValidDateFormat = (date: string): boolean => {
 };
 
 const TimerEntries: React.FC = () => {
-  const { workEntries } = useWorkEntries();
+  const { workEntries, fetchNextPage, hasNextPage, isFetchingNextPage } =
+    useWorkEntries();
   const { projects } = useProjects();
   const [showCurrentProjectOnly, setShowCurrentProjectOnly] = useState(false);
 
@@ -45,6 +46,35 @@ const TimerEntries: React.FC = () => {
   const [editingEntry, setEditingEntry] = useState<EditableEntry | null>(null);
   const { updateWorkEntry } = useUpdateWorkEntry();
 
+  const [description, setDescription] = useState<string>("");
+  const [showDescriptionModal, setShowDescriptionModal] = useState(false);
+
+  const loadMoreRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!hasNextPage) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting) {
+          fetchNextPage();
+        }
+      },
+      { threshold: 0.1 }
+    );
+
+    const currentRef = loadMoreRef.current;
+    if (currentRef) {
+      observer.observe(currentRef);
+    }
+
+    return () => {
+      if (currentRef) {
+        observer.unobserve(currentRef);
+      }
+    };
+  }, [fetchNextPage, hasNextPage]);
+
   const workTimes = useMemo(() => {
     const workTimes: WorkEntryWithDuration[] = [];
     workEntries?.forEach((entry) => {
@@ -56,13 +86,14 @@ const TimerEntries: React.FC = () => {
         duration:
           new Date(entry.endTime).getTime() -
           new Date(entry.startTime).getTime(),
+        project: projects?.find((p) => p.id === entry.projectId),
       });
     });
     return workTimes.sort(
       (a, b) =>
         new Date(b.startTime).getTime() - new Date(a.startTime).getTime()
     );
-  }, [workEntries, showCurrentProjectOnly, currentProject?.id]);
+  }, [workEntries, showCurrentProjectOnly, currentProject?.id, projects]);
 
   useEffect(() => {
     chrome.storage.local.get(["timerRunning", "startTime"], (result) => {
@@ -115,17 +146,26 @@ const TimerEntries: React.FC = () => {
 
   const stopTimer = () => {
     if (startTime === null) return;
+    setShowDescriptionModal(true);
+  };
 
+  const finalizeTimer = () => {
+    if (startTime === null) return;
     const endTime = new Date();
+
     createWorkEntry({
       projectId: currentProject?.id || "",
       startTime,
       endTime,
+      description: description.trim() || "No description",
     });
 
     setTimerRunning(false);
     setStartTime(null);
     setElapsedTime(0);
+    setDescription("");
+    setShowDescriptionModal(false);
+
     chrome.storage.local.set({
       timerRunning: false,
       startTime: null,
@@ -166,6 +206,7 @@ const TimerEntries: React.FC = () => {
       date,
       startTime,
       endTime,
+      description: entry.description || "",
     });
   };
 
@@ -201,6 +242,7 @@ const TimerEntries: React.FC = () => {
       startTime: startDateTime.toISOString(),
       endTime: endDateTime.toISOString(),
       projectId: workEntries?.find((e) => e.id === entry.id)?.projectId || "",
+      description: entry.description,
     });
 
     setEditingEntry(null);
@@ -228,8 +270,8 @@ const TimerEntries: React.FC = () => {
           <span>Total today: {formatDateTime(totalTodayTime, "duration")}</span>
         </div>
       </div>
-      <div className="overflow-y-auto flex-grow h-full">
-        <table className="w-full table-auto border-collapse">
+      <div className="overflow-y-auto flex-grow w-full">
+        <table className="w-full table-auto border-collapse max-w-full">
           <thead>
             <tr className="bg-gray-200">
               <th className="border px-4 py-2">Date</th>
@@ -237,13 +279,14 @@ const TimerEntries: React.FC = () => {
               <th className="border px-4 py-2">End</th>
               <th className="border px-4 py-2">Duration</th>
               <th className="border px-4 py-2">Project</th>
+              <th className="border px-4 py-2">Description</th>
               <th className="border px-4 py-2">Actions</th>
             </tr>
           </thead>
           <tbody>
             {workTimes.map((entry, index) => (
               <tr key={index} className="bg-white even:bg-gray-200">
-                <td className="border px-4 py-2 text-center">
+                <td className="border px-4 py-2 text-center text-ellipsis whitespace-nowrap overflow-hidden">
                   {editingEntry?.id === entry.id ? (
                     <input
                       type="text"
@@ -261,7 +304,7 @@ const TimerEntries: React.FC = () => {
                     formatDateTime(new Date(entry.startTime).getTime(), "date")
                   )}
                 </td>
-                <td className="border px-2 py-2 text-center">
+                <td className="border px-2 py-2 text-center text-ellipsis whitespace-nowrap">
                   {editingEntry?.id === entry.id ? (
                     <input
                       type="text"
@@ -279,7 +322,7 @@ const TimerEntries: React.FC = () => {
                     formatDateTime(new Date(entry.startTime).getTime(), "time")
                   )}
                 </td>
-                <td className="border px-2 py-2 text-center">
+                <td className="border px-2 py-2 text-center text-ellipsis whitespace-nowrap">
                   {editingEntry?.id === entry.id ? (
                     <input
                       type="text"
@@ -300,9 +343,28 @@ const TimerEntries: React.FC = () => {
                 <td className="border px-2 py-2 text-center">
                   {formatDateTime(entry.duration, "duration")}
                 </td>
-                <td className="border px-4 py-2 text-center">
+                <td className="border px-4 py-2 text-sm text-center text-ellipsis whitespace-nowrap overflow-hidden">
                   {projects?.find((p) => p.id === entry.projectId)?.name ||
                     "Unknown Project"}
+                </td>
+                <td className="border px-4 py-2 text-ellipsis whitespace-nowrap overflow-hidden">
+                  {editingEntry?.id === entry.id ? (
+                    <input
+                      type="text"
+                      value={editingEntry.description}
+                      onChange={(e) => {
+                        setEditingEntry({
+                          ...editingEntry,
+                          description: e.target.value,
+                        });
+                      }}
+                      className="w-full text-xs border-none rounded focus:outline-none focus:ring-1 focus:ring-teal-500"
+                    />
+                  ) : (
+                    <span className="text-sm text-gray-600">
+                      {entry.description || "No description"}
+                    </span>
+                  )}
                 </td>
                 <td className="border px-2 py-2 text-center">
                   <div className="flex justify-center gap-2">
@@ -359,6 +421,19 @@ const TimerEntries: React.FC = () => {
             ))}
           </tbody>
         </table>
+
+        <div
+          ref={loadMoreRef}
+          className="w-full py-4 text-center text-gray-500"
+        >
+          {isFetchingNextPage ? (
+            <div className="w-8 h-8 border-3 border-teal-500 border-t-transparent rounded-full animate-spin mx-auto" />
+          ) : hasNextPage ? (
+            "Loading more entries..."
+          ) : (
+            "No more entries"
+          )}
+        </div>
       </div>
       <div className="flex pt-2 justify-between items-center border-t-black border-t">
         <label className="flex items-center">
@@ -391,6 +466,38 @@ const TimerEntries: React.FC = () => {
           Current project: {currentProject?.name || "No project selected"}
         </span>
       </div>
+
+      {showDescriptionModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center">
+          <div className="bg-white p-6 rounded-lg shadow-xl max-w-md w-full">
+            <h3 className="text-lg font-semibold mb-4">
+              Add Time Entry Description
+            </h3>
+            <textarea
+              className="w-full p-2 border rounded-md mb-4"
+              rows={3}
+              placeholder="What did you work on? (optional)"
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              autoFocus
+            />
+            <div className="flex justify-end gap-2">
+              <button
+                className="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded"
+                onClick={() => finalizeTimer()}
+              >
+                Skip
+              </button>
+              <button
+                className="px-4 py-2 bg-teal-500 text-white rounded hover:bg-teal-600"
+                onClick={() => finalizeTimer()}
+              >
+                Save
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

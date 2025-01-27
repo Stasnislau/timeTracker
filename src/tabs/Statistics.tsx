@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { Bar } from "react-chartjs-2";
 import {
   Chart as ChartJS,
@@ -9,9 +9,12 @@ import {
   CategoryScale,
   LinearScale,
 } from "chart.js";
-import { useWorkEntries } from "../api/hooks/useWorkEntries";
-import { WorkEntry } from "../types/workEntry";
+import { useStatistics } from "../api/hooks/useStatistics";
 import { formatDateTime } from "../utils/formatDateTime";
+import { StatisticsRequest } from "../types/requests/statisticsRequest";
+import { useAvailableYears } from "../api/hooks/useAvailableYears";
+import { calculateEarning } from "../utils/calculateEarning";
+import { convertToHourMinutes } from "../utils/convertToHourMinutes";
 
 ChartJS.register(
   Title,
@@ -23,270 +26,152 @@ ChartJS.register(
 );
 
 const Statistics: React.FC = () => {
-  const { workEntries } = useWorkEntries();
   const [hourlyRate, setHourlyRate] = useState<number>(0);
-  const [selectedPeriod, setSelectedPeriod] = useState<string>("monthly");
-  const [years, setYears] = useState<number[]>([]);
+  const { availableYears } = useAvailableYears();
+  const [selectedPeriod, setSelectedPeriod] = useState<
+    "monthly" | "yearly" | "total"
+  >("monthly");
   const [selectedMonth, setSelectedMonth] = useState<string>(
     new Date().toLocaleString("default", { month: "long" })
   );
   const [selectedYear, setSelectedYear] = useState<number>(
     new Date().getFullYear()
   );
-  const [totalTime, setTotalTime] = useState<number>(0);
+  const [week, setWeek] = useState<number>(1);
 
   useEffect(() => {
     chrome.storage.local.get(["hourlyRate"], (result) => {
-      if (result.hourlyRate) {
-        setHourlyRate(result.hourlyRate || 1);
-      }
+      setHourlyRate(result.hourlyRate || 0);
     });
   }, []);
 
-  useEffect(() => {
-    const years = workEntries?.map((entry) =>
-      new Date(entry.startTime).getFullYear()
-    );
-    const uniqueYears = Array.from(new Set(years));
-    setYears(uniqueYears);
-  }, [workEntries]);
-
-  useEffect(() => {
-    const calculateTotalTime = (filter: (entry: WorkEntry) => boolean) => {
-      if (!workEntries) return 0;
-
-      return workEntries.filter(filter).reduce((acc, entry) => {
-        const start = new Date(entry.startTime).getTime();
-        const end = new Date(entry.endTime).getTime();
-        return acc + (end - start);
-      }, 0);
-    };
-
-    const now = new Date();
-    let filterFunction: (entry: WorkEntry) => boolean;
-
-    if (selectedPeriod === "weekly") {
-      const startOfWeek = new Date(now);
-      startOfWeek.setHours(0, 0, 0, 0);
-      startOfWeek.setDate(now.getDate() - now.getDay()); // Начало недели (воскресенье)
-
-      filterFunction = (entry) => {
-        const entryDate = new Date(entry.startTime);
-        return entryDate >= startOfWeek && entryDate <= now;
-      };
-    } else if (selectedPeriod === "monthly") {
-      const monthDate = new Date(`${selectedMonth} 1, ${selectedYear}`);
-      const monthStart = new Date(selectedYear, monthDate.getMonth(), 1);
-      const monthEnd = new Date(
-        selectedYear,
-        monthDate.getMonth() + 1,
-        0,
-        23,
-        59,
-        59,
-        999
-      );
-
-      filterFunction = (entry) => {
-        const entryDate = new Date(entry.startTime);
-        return entryDate >= monthStart && entryDate <= monthEnd;
-      };
-    } else {
-      // yearly
-      const yearStart = new Date(selectedYear, 0, 1);
-      const yearEnd = new Date(selectedYear, 11, 31, 23, 59, 59, 999);
-
-      filterFunction = (entry) => {
-        const entryDate = new Date(entry.startTime);
-        return entryDate >= yearStart && entryDate <= yearEnd;
-      };
-    }
-
-    const total = calculateTotalTime(filterFunction);
-    setTotalTime(total);
-  }, [workEntries, selectedPeriod, selectedMonth, selectedYear]);
-  const handleHourlyRateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const rate = parseFloat(e.target.value);
-    setHourlyRate(rate);
-    chrome.storage.local.set({ hourlyRate: rate });
-  };
-
-  const calculateEarnings = (totalTime: number) => {
-    return Math.round(totalTime / (1000 * 60 * 60)) * hourlyRate;
-  };
-
-  const handlePeriodChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    setSelectedPeriod(e.target.value);
-  };
-
-  const handleMonthChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    setSelectedMonth(e.target.value);
-  };
-
-  const handleYearChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    setSelectedYear(Number(e.target.value));
-  };
-  const calculateChartData = () => {
-    const now = new Date();
-    let labels: string[] = [];
-    let data: number[] = [];
-
-    if (!workEntries) return { labels: [], datasets: [] };
-
-    if (selectedPeriod === "weekly") {
-      const startOfWeek = new Date(now);
-      startOfWeek.setDate(now.getDate() - now.getDay());
-      startOfWeek.setHours(0, 0, 0, 0);
-
-      labels = Array.from({ length: 7 }, (_, i) => {
-        const day = new Date(startOfWeek);
-        day.setDate(startOfWeek.getDate() + i);
-        return day.toLocaleDateString();
-      });
-
-      data = labels.map((day) => {
-        const dayStart = new Date(day);
-        const dayEnd = new Date(day);
-        dayEnd.setHours(23, 59, 59, 999);
-
-        return workEntries
-          .filter((entry) => {
-            const entryDate = new Date(entry.startTime);
-            return entryDate >= dayStart && entryDate <= dayEnd;
-          })
-          .reduce((acc, entry) => {
-            const start = new Date(entry.startTime).getTime();
-            const end = new Date(entry.endTime).getTime();
-            return acc + (end - start);
-          }, 0);
-      });
-    } else if (selectedPeriod === "monthly") {
-      const monthDate = new Date(`${selectedMonth} 1, ${selectedYear}`);
-      const daysInMonth = new Date(
-        selectedYear,
-        monthDate.getMonth() + 1,
-        0
-      ).getDate();
-
-      labels = Array.from({ length: daysInMonth }, (_, i) => `Day ${i + 1}`);
-      data = labels.map((_, i) => {
-        const dayStart = new Date(selectedYear, monthDate.getMonth(), i + 1);
-        const dayEnd = new Date(
-          selectedYear,
-          monthDate.getMonth(),
-          i + 1,
-          23,
-          59,
-          59,
-          999
-        );
-
-        return workEntries
-          .filter((entry) => {
-            const entryDate = new Date(entry.startTime);
-            return entryDate >= dayStart && entryDate <= dayEnd;
-          })
-          .reduce((acc, entry) => {
-            const start = new Date(entry.startTime).getTime();
-            const end = new Date(entry.endTime).getTime();
-            return acc + (end - start);
-          }, 0);
-      });
-    } else if (selectedPeriod === "yearly") {
-      labels = Array.from({ length: 12 }, (_, i) =>
-        new Date(0, i).toLocaleString("default", { month: "short" })
-      );
-
-      data = labels.map((_, i) => {
-        const monthStart = new Date(selectedYear, i, 1);
-        const monthEnd = new Date(selectedYear, i + 1, 0, 23, 59, 59, 999);
-
-        return workEntries
-          .filter((entry) => {
-            const entryDate = new Date(entry.startTime);
-            return entryDate >= monthStart && entryDate <= monthEnd;
-          })
-          .reduce((acc, entry) => {
-            const start = new Date(entry.startTime).getTime();
-            const end = new Date(entry.endTime).getTime();
-            return acc + (end - start);
-          }, 0);
-      });
-    }
-
+  const statisticsRequest: StatisticsRequest = useMemo(() => {
     return {
-      labels,
-      datasets: [
-        {
-          label: "Earnings",
-          data: data.map((d) => calculateEarnings(d)),
-          backgroundColor: "rgba(255, 99, 132, 0.5)",
-          borderColor: "rgba(255, 99, 132, 1)",
-          borderWidth: 1,
-          hidden: true,
-        },
-        {
-          label: "Hours",
-          data: data.map((d) => d / (1000 * 60 * 60)), // конвертируем миллисекунды в часы
-          backgroundColor: "rgba(75, 192, 192, 0.5)",
-          borderColor: "rgba(75, 192, 192, 1)",
-          borderWidth: 1,
-        },
-      ],
+      type: selectedPeriod,
+      month: new Date(selectedMonth + " 1, " + selectedYear).getMonth() + 1,
+      year: selectedYear,
     };
+  }, [selectedPeriod, selectedMonth, selectedYear]);
+
+  const { statisticsItems, isLoading, error } =
+    useStatistics(statisticsRequest);
+
+  const totalHours = useMemo(
+    () => statisticsItems?.reduce((acc, item) => acc + item.totalHours, 0) ?? 0,
+    [statisticsItems]
+  );
+
+  const chartData = {
+    labels:
+      statisticsItems?.map((item) =>
+        formatDateTime(
+          new Date(item.date).getTime(),
+          selectedPeriod === "yearly"
+            ? "month"
+            : selectedPeriod === "total"
+            ? "year"
+            : "dd.mm"
+        )
+      ) ?? [],
+    datasets: [
+      {
+        label: "Hours Worked",
+        data:
+          statisticsItems?.map((item) => Number(item.totalHours.toFixed(2))) ??
+          [],
+        backgroundColor: "rgba(54, 162, 235, 0.6)",
+        borderColor: "rgba(54, 162, 235, 1)",
+        borderWidth: 1,
+        stack: "Hours",
+      },
+    ],
   };
 
-  const [chartData, setChartData] = useState(calculateChartData());
-
-  useEffect(() => {
-    setChartData(calculateChartData());
-  }, [workEntries, selectedPeriod, selectedMonth, selectedYear]);
-
-  const months = [
-    "January",
-    "February",
-    "March",
-    "April",
-    "May",
-    "June",
-    "July",
-    "August",
-    "September",
-    "October",
-    "November",
-    "December",
-  ];
+  const chartOptions = {
+    responsive: true,
+    scales: {
+      y: {
+        beginAtZero: true,
+        title: {
+          display: true,
+          text: "Hours",
+        },
+        stacked: true,
+      },
+      x: {
+        stacked: true,
+        title: {
+          display: true,
+          text:
+            selectedPeriod === "yearly"
+              ? "Months"
+              : selectedPeriod === "total"
+              ? "Years"
+              : "Days",
+        },
+      },
+    },
+    plugins: {
+      legend: {
+        position: "top" as const,
+      },
+      title: {
+        display: true,
+        text: `Work Hours for ${selectedPeriod} period`,
+      },
+      tooltip: {
+        callbacks: {
+          label: (context: any) =>
+            `Hours: ${context.raw.toFixed(2)} Earnings: ${
+              hourlyRate < 60
+                ? `$${calculateEarning(context.raw, hourlyRate)}`
+                : `${calculateEarning(context.raw, hourlyRate)} PLN`
+            }`,
+        },
+      },
+    },
+  };
 
   return (
     <div className="w-full bg-white overflow-y-auto">
       <div className="mb-2 flex flex-row justify-between items-center gap-4 px-4">
         <div className="flex flex-col w-1/3">
           <label className="block text-gray-700 font-medium mb-2">
-            Hourly Rate ($):
+            Hourly Rate:
           </label>
           <input
             type="number"
             value={hourlyRate}
-            onChange={handleHourlyRateChange}
+            onChange={(e) => {
+              const rate = parseFloat(e.target.value);
+              setHourlyRate(rate);
+              chrome.storage.local.set({ hourlyRate: rate });
+            }}
             className="w-full p-3 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-teal-500"
           />
         </div>
 
+        {/* Period Selector */}
         <div className="flex flex-col w-1/3">
           <label className="block text-gray-700 font-medium mb-2">
             Select Period:
           </label>
           <select
             value={selectedPeriod}
-            onChange={handlePeriodChange}
+            onChange={(e) =>
+              setSelectedPeriod(
+                e.target.value as "monthly" | "yearly" | "total"
+              )
+            }
             className="w-full p-3 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-teal-500"
           >
-            <option value="weekly">Weekly</option>
             <option value="monthly">Monthly</option>
             <option value="yearly">Yearly</option>
+            <option value="total">Total</option>
           </select>
         </div>
 
+        {/* Period-specific selectors */}
         {selectedPeriod === "monthly" && (
           <div className="flex flex-col w-1/3">
             <label className="block text-gray-700 font-medium mb-2">
@@ -294,10 +179,23 @@ const Statistics: React.FC = () => {
             </label>
             <select
               value={selectedMonth}
-              onChange={handleMonthChange}
+              onChange={(e) => setSelectedMonth(e.target.value)}
               className="w-full p-3 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-teal-500"
             >
-              {months.map((month) => (
+              {[
+                "January",
+                "February",
+                "March",
+                "April",
+                "May",
+                "June",
+                "July",
+                "August",
+                "September",
+                "October",
+                "November",
+                "December",
+              ].map((month) => (
                 <option key={month} value={month}>
                   {month}
                 </option>
@@ -306,61 +204,64 @@ const Statistics: React.FC = () => {
           </div>
         )}
 
-        {selectedPeriod === "yearly" && (
-          <div className="flex flex-col flex-1">
-            <label className="block text-gray-700 font-medium mb-2">
-              Select Year:
-            </label>
-            <select
-              value={selectedYear}
-              onChange={handleYearChange}
-              className="w-full p-3 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-teal-500"
-            >
-              {years && years.length > 0 ? (
-                years.map((year) => (
-                  <option key={year} value={year}>
-                    {year}
-                  </option>
-                ))
-              ) : (
-                <option value={new Date().getFullYear()}>
-                  {new Date().getFullYear()}
-                </option>
-              )}
-            </select>
-          </div>
-        )}
+        <div className="flex flex-col w-1/3">
+          <label className="block text-gray-700 font-medium mb-2">
+            Select Year:
+          </label>
+          <select
+            value={selectedYear}
+            onChange={(e) => setSelectedYear(parseInt(e.target.value))}
+            className="w-full p-3 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-teal-500"
+          >
+            {availableYears?.map((year) => (
+              <option key={year} value={year}>
+                {year}
+              </option>
+            ))}
+          </select>
+        </div>
       </div>
 
-      <div className="mb-6 p-4 transition-transform transform">
-        <h2 className="text-2xl text-center font-semibold text-gray-800 mb-4 font-roboto">
+      {/* Summary */}
+      <div className="mb-6 p-4">
+        <h2 className="text-2xl text-center font-semibold text-gray-800 mb-4">
           Summary
         </h2>
         <div className="flex flex-row justify-between">
-          <p className="text-gray-700 text-lg mb-2 font-roboto">
-            Total Time:{" "}
-            <span className="font-bold text-teal-600 text-xl animate-pulse">
-              {formatDateTime(totalTime, "report")}
+          <p className="text-gray-700 text-lg mb-2">
+            Total Hours:{" "}
+            <span className="font-bold text-teal-600 text-xl">
+              {convertToHourMinutes(totalHours)}
             </span>
           </p>
-          <p className="text-gray-700 text-lg font-roboto">
+          <p className="text-gray-700 text-lg">
             Total Earnings:{" "}
-            <span className="font-bold text-teal-600 text-xl animate-pulse">
-              {hourlyRate < 60 && "$"}
-              {calculateEarnings(totalTime).toFixed(2)}
-              {hourlyRate >= 60 && " Zł"}
+            <span className="font-bold text-teal-600 text-xl">
+              {hourlyRate < 60
+                ? `$${calculateEarning(totalHours, hourlyRate)}`
+                : `${calculateEarning(totalHours, hourlyRate)} PLN`}
             </span>
           </p>
         </div>
       </div>
 
-      <div className="mb-6">
-        <Bar
-          data={chartData}
-          options={{
-            maintainAspectRatio: false,
-          }}
-        />
+      {/* Chart */}
+      <div className="p-4">
+        {isLoading ? (
+          <div className="flex justify-center items-center h-64">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-teal-500" />
+          </div>
+        ) : error ? (
+          <div className="text-red-500 text-center p-4">
+            Error loading statistics: {error.message}
+          </div>
+        ) : statisticsItems?.length === 0 ? (
+          <div className="text-gray-500 text-center p-4">
+            No data available for the selected period
+          </div>
+        ) : (
+          <Bar data={chartData} options={chartOptions} />
+        )}
       </div>
     </div>
   );

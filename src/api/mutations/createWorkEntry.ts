@@ -5,6 +5,7 @@ export interface CreateWorkEntryInput {
   projectId: string;
   startTime: Date;
   endTime: Date;
+  description: string;
 }
 
 export const createWorkEntry = async (
@@ -19,6 +20,7 @@ export const createWorkEntry = async (
       ...data,
       startTime: data.startTime.toISOString(),
       endTime: data.endTime.toISOString(),
+      description: data.description || "",
     }),
   });
 
