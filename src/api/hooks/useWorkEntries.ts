@@ -13,7 +13,6 @@ export const useWorkEntries = () => {
     queryKey: ["workEntries"],
     queryFn: ({ pageParam }) => getWorkEntries({ monthCursor: pageParam }),
     getNextPageParam: (lastPage) => {
-      if (!lastPage.items.length) return undefined;
       return lastPage.nextCursor;
     },
     initialPageParam: new Date().toISOString()

@@ -35,3 +35,4 @@ server/timetracker-service.xml
 server/install-service.js
 server/install-service.bat
 logs.txt
+yarn.lock

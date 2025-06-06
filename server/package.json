@@ -39,7 +39,6 @@
     "date-fns": "^4.1.0",
     "env": "^0.0.2",
     "exceljs": "^4.4.0",
-    "node-windows": "^1.0.0-beta.8",
     "prisma": "^5.22.0",
     "reflect-metadata": "^0.2.0",
     "rxjs": "^7.8.1"

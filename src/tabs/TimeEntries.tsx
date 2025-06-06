@@ -20,6 +20,7 @@ interface EditableEntry {
   startTime: string;
   endTime: string;
   description: string;
+  projectId: string;
 }
 
 const isValidTimeFormat = (time: string): boolean => {
@@ -31,8 +32,13 @@ const isValidDateFormat = (date: string): boolean => {
 };
 
 const TimerEntries: React.FC = () => {
-  const { workEntries, fetchNextPage, hasNextPage, isFetchingNextPage } =
-    useWorkEntries();
+  const {
+    workEntries,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+    isLoading,
+  } = useWorkEntries();
   const { projects } = useProjects();
   const [showCurrentProjectOnly, setShowCurrentProjectOnly] = useState(false);
 
@@ -50,6 +56,23 @@ const TimerEntries: React.FC = () => {
   const [showDescriptionModal, setShowDescriptionModal] = useState(false);
 
   const loadMoreRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (
+      !isLoading &&
+      workEntries?.length === 0 &&
+      hasNextPage &&
+      !isFetchingNextPage
+    ) {
+      fetchNextPage();
+    }
+  }, [
+    isLoading,
+    workEntries,
+    hasNextPage,
+    fetchNextPage,
+    isFetchingNextPage,
+  ]);
 
   useEffect(() => {
     if (!hasNextPage) return;
@@ -207,6 +230,7 @@ const TimerEntries: React.FC = () => {
       startTime,
       endTime,
       description: entry.description || "",
+      projectId: entry.projectId || "",
     });
   };
 
@@ -241,7 +265,7 @@ const TimerEntries: React.FC = () => {
       id: entry.id,
       startTime: startDateTime.toISOString(),
       endTime: endDateTime.toISOString(),
-      projectId: workEntries?.find((e) => e.id === entry.id)?.projectId || "",
+      projectId: entry.projectId,
       description: entry.description,
     });
 
@@ -376,15 +400,32 @@ const TimerEntries: React.FC = () => {
                   </span>
                 </td>
                 <td className="border px-2 py-2 text-xs text-center text-ellipsis whitespace-nowrap overflow-hidden">
-                  <span
-                    title={
-                      projects?.find((p) => p.id === entry.projectId)?.name ||
-                      "Unknown Project"
-                    }
-                  >
-                    {projects?.find((p) => p.id === entry.projectId)?.name ||
-                      "Unknown Project"}
-                  </span>
+                  {editingEntry?.id === entry.id ? (
+                    <select
+                      value={editingEntry.projectId}
+                      onChange={(e) => {
+                        if (editingEntry) {
+                          setEditingEntry({
+                            ...editingEntry,
+                            projectId: e.target.value,
+                          });
+                        }
+                      }}
+                      className="w-full text-sm border-none rounded focus:outline-none focus:ring-1 focus:ring-teal-500 bg-transparent"
+                    >
+                      {projects?.map((p) => (
+                        <option key={p.id} value={p.id}>
+                          {p.name}
+                        </option>
+                      ))}
+                    </select>
+                  ) : (
+                    <span
+                      title={entry.project?.name || "Unknown Project"}
+                    >
+                      {entry.project?.name || "Unknown Project"}
+                    </span>
+                  )}
                 </td>
                 <td className="border px-2 py-2 text-ellipsis whitespace-nowrap overflow-hidden max-w-[100px]">
                   {editingEntry?.id === entry.id ? (
@@ -528,10 +569,10 @@ const TimerEntries: React.FC = () => {
                 className="flex items-center px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
                 onClick={() => {
                   setDescription("");
-                  finalizeTimer();
+                  setShowDescriptionModal(false);
                 }}
               >
-                Skip
+                Cancel
               </button>
               <button
                 className="flex items-center px-4 py-2 bg-teal-500 text-white rounded-lg hover:bg-teal-600 transition-colors"
